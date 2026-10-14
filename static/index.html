@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SalesEasy — Field Update Triage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap masthead__row">
+      <p class="mark">SalesEasy</p>
+      <p class="masthead__sub">Field update triage · claims are checked against system records before any action</p>
+    </div>
+  </header>
+
+  <main class="wrap layout">
+    <!-- INPUT -->
+    <section class="col col--input" aria-labelledby="input-h">
+      <h2 id="input-h" class="label">Field update</h2>
+      <form id="form" novalidate>
+        <textarea id="update" name="update" rows="7" maxlength="4000"
+          placeholder="Paste or type the rep's update, e.g. &quot;Metro Fresh is out of Cola 500ml…&quot;"
+          aria-describedby="update-hint"></textarea>
+        <div class="form__row">
+          <p id="update-hint" class="hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to analyze</p>
+          <button id="submit" type="submit" class="btn-primary">Analyze update</button>
+        </div>
+      </form>
+
+      <div class="block">
+        <h3 class="label">Test scenarios</h3>
+        <div id="samples" class="samples" role="list"></div>
+      </div>
+
+      <div class="block">
+        <div class="block__head">
+          <h3 class="label">Verified system records</h3>
+          <span id="records-state" class="tag">defaults</span>
+        </div>
+        <table class="records">
+          <thead><tr><th class="id">ID</th><th>Outlet</th><th>SKU</th><th class="num">Stock</th><th><span class="sr">Remove</span></th></tr></thead>
+          <tbody id="records"></tbody>
+        </table>
+        <div class="records__actions">
+          <button type="button" id="add-record" class="btn-quiet">Add record</button>
+          <button type="button" id="reset-records" class="btn-quiet" hidden>Reset to defaults</button>
+        </div>
+        <p class="hint">The only source treated as fact. Everything in a field update is a claim until it matches a row here. Edits apply to your next analysis only.</p>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section class="col col--result" aria-labelledby="result-h" aria-live="polite" aria-busy="false" id="result-col">
+      <h2 id="result-h" class="label">Assessment</h2>
+
+      <div id="state-empty" class="empty">
+        <p>Each update gets one structured assessment: what the issue is, how urgent it is, which statements are <em>verified</em>, <em>contradicted</em> or <em>unverified</em>, the next action, and whether a human has to decide.</p>
+      </div>
+
+      <div id="state-loading" class="loading" hidden>
+        <div class="skel skel--banner"></div>
+        <div class="skel skel--line"></div>
+        <div class="skel skel--line short"></div>
+      </div>
+
+      <div id="state-error" class="error" role="alert" hidden></div>
+
+      <article id="state-result" class="result" hidden>
+        <div id="verdict" class="verdict">
+          <p class="verdict__title" id="verdict-title"></p>
+          <p class="verdict__reason" id="verdict-reason"></p>
+        </div>
+
+        <dl class="facts">
+          <div><dt>Category</dt><dd id="r-category"></dd></div>
+          <div><dt>Urgency</dt><dd id="r-urgency"></dd></div>
+        </dl>
+
+        <div class="block">
+          <h3 class="label">Recommended next action</h3>
+          <p id="r-action" class="action"></p>
+        </div>
+
+        <div class="block">
+          <h3 class="label">Evidence</h3>
+          <ul id="r-evidence" class="evidence"></ul>
+          <ul class="legend" aria-label="Evidence legend">
+            <li><span class="dot dot--verified"></span>verified</li>
+            <li><span class="dot dot--contradicted"></span>contradicted</li>
+            <li><span class="dot dot--unverified"></span>unverified</li>
+          </ul>
+        </div>
+
+        <div class="block">
+          <h3 class="label">Missing information</h3>
+          <ul id="r-missing" class="missing"></ul>
+        </div>
+
+        <details class="disclosure">
+          <summary>How this was produced</summary>
+          <dl id="r-trace" class="trace"></dl>
+        </details>
+
+        <details class="disclosure">
+          <summary>Raw JSON</summary>
+          <div class="json__bar"><button type="button" id="copy-json" class="btn-quiet">Copy</button></div>
+          <pre id="r-json" class="json"></pre>
+        </details>
+      </article>
+    </section>
+  </main>
+
+  <!-- EVALUATION SAMPLE -->
+  <section class="wrap evals" aria-labelledby="evals-h">
+    <div class="evals__head">
+      <div>
+        <h2 id="evals-h" class="label">Evaluation · 3 random cases from the latest run</h2>
+        <p id="evals-summary" class="evals__summary"></p>
+      </div>
+      <button type="button" id="evals-refresh" class="btn-quiet">Show 3 others</button>
+    </div>
+    <div id="evals-cards" class="evals__cards" aria-live="polite"></div>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

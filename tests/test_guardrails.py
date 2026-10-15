@@ -173,6 +173,16 @@ def test_data_cannot_close_its_own_delimiter():
     assert msgs[1]["content"].count("</field_update>") == 1
 
 
+# ---------- evaluation views ----------
+
+def test_eval_endpoints_serve_all_cases_and_samples():
+    client = TestClient(app)
+    every = client.get("/api/evals/all").json()
+    assert len(every["cases"]) == every["summary"]["n"] == 100
+    assert len({c["id"] for c in every["cases"]}) == 100
+    assert len(client.get("/api/evals/sample?n=3").json()["cases"]) == 3
+
+
 # ---------- fail closed ----------
 
 def test_api_fails_closed_without_llm(monkeypatch):

@@ -256,15 +256,23 @@ function verdictLine(v) {
   return `${v.review ? "review" : "no review"} · ${v.urgency} · ${humanize(v.category).toLowerCase()}`;
 }
 
+const passTag = (ok) => el("span", { class: "pf " + (ok ? "pf--pass" : "pf--fail") }, ok ? "PASS" : "FAIL");
+
 function evalCard(c) {
   const card = el("article", { class: "ecard" });
   const top = el("div", { class: "ecard__top" });
   top.append(
     el("span", { class: "ecard__id" }, c.id),
     el("span", { class: "ecard__fam" }, c.family.replace(/_/g, " ")),
-    el("span", { class: "pf " + (c.full.pass ? "pf--pass" : "pf--fail") }, c.full.pass ? "PASS" : "FAIL"),
+    passTag(c.full.pass),
   );
-  const dl = el("dl");
+  card.append(top, el("p", { class: "ecard__text" }, c.text), ...caseDetails(c));
+  return card;
+}
+
+// Expected vs actual + "run live": shared by the 3-card sample and the full list.
+function caseDetails(c) {
+  const dl = el("dl", { class: "edetails" });
   const row = (k, v) => { const dd = el("dd"); typeof v === "string" ? (dd.textContent = v) : dd.append(v); dl.append(el("dt", {}, k), dd); };
   const ul = (items, cls) => { const u = el("ul", cls ? { class: cls } : {}); items.forEach((i) => u.append(el("li", {}, i))); return u; };
   row("expected", c.expected.length ? ul(c.expected) : "no specific assertion (invariants only)");
@@ -280,9 +288,64 @@ function evalCard(c) {
     submit();
   });
   const foot = el("div", { class: "ecard__foot" }); foot.append(run);
-  card.append(top, el("p", { class: "ecard__text" }, c.text), dl, foot);
-  return card;
+  return [dl, foot];
 }
+
+// ---------- all cases ----------
+let allCases = null;
+
+function filterAll() {
+  const fam = $("eall-family").value, st = $("eall-status").value;
+  const shown = allCases.filter((c) =>
+    (fam === "all" || c.family === fam) &&
+    (st === "all" ||
+     (st === "pipeline_fail" && !c.full.pass) ||
+     (st === "model_fail" && !c.model_only.pass) ||
+     (st === "saved" && c.full.pass && !c.model_only.pass)));
+  $("eall-count").textContent = `Showing ${shown.length} of ${allCases.length}`;
+  const list = $("eall-list");
+  list.replaceChildren(...shown.map((c) => {
+    const row = el("details", { class: "erow" });
+    const sum = el("summary");
+    sum.append(
+      el("span", { class: "ecard__id" }, c.id),
+      el("span", { class: "erow__text" }, c.text),
+      el("span", { class: "erow__verdict" }, verdictLine(c.full)),
+      passTag(c.full.pass),
+    );
+    const body = el("div", { class: "erow__body" });
+    body.append(el("p", { class: "ecard__fam" }, c.family.replace(/_/g, " ")), ...caseDetails(c));
+    row.append(sum, body);
+    return row;
+  }));
+  if (!shown.length) list.append(el("p", { class: "hint" }, "No cases match these filters."));
+}
+
+async function toggleAll() {
+  const panel = $("eall"), btn = $("evals-all");
+  const open = panel.hidden;
+  panel.hidden = !open;
+  btn.textContent = open ? "Hide all cases" : `Show all ${allCases?.length ?? 100}`;
+  btn.setAttribute("aria-expanded", String(open));
+  if (!open || allCases) return;
+  $("eall-count").textContent = "Loading…";
+  try {
+    const res = await fetch("/api/evals/all");
+    if (!res.ok) throw new Error();
+    allCases = (await res.json()).cases;
+    const fams = [...new Set(allCases.map((c) => c.family))];
+    $("eall-family").replaceChildren(
+      el("option", { value: "all" }, `All families (${allCases.length})`),
+      ...fams.map((f) => el("option", { value: f }, `${f.replace(/_/g, " ")} (${allCases.filter((c) => c.family === f).length})`)),
+    );
+    filterAll();
+  } catch {
+    $("eall-count").textContent = "Could not load evaluation cases.";
+  }
+}
+$("evals-all").addEventListener("click", toggleAll);
+$("eall-family").addEventListener("change", filterAll);
+$("eall-status").addEventListener("change", filterAll);
 
 async function loadEvals() {
   const box = $("evals-cards");

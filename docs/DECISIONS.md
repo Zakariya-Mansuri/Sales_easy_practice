@@ -30,7 +30,7 @@ Format: Context → Decision → Consequences (Nygard). Status of all records: *
 
 **Decision.** The model returns extractions (`stock_claims`, `signals`) alongside its draft assessment. Code computes: stock comparisons, evidence statuses, review, urgency floors, and whether the action is trustworthy.
 
-**Consequences.** Decisions are auditable, testable without the network (25 unit tests) and explainable in the trace. The model's role is narrower and easier to evaluate. Measured effect on the same responses: 40 → 98 / 100.
+**Consequences.** Decisions are auditable, testable without the network (26 unit tests) and explainable in the trace. The model's role is narrower and easier to evaluate. Measured effect on the same responses: 40 → 98 / 100.
 
 ---
 

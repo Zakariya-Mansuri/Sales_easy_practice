@@ -63,7 +63,7 @@ Without a key the service still runs and every request returns the fail-closed f
 
 ## Use
 
-- **UI:** paste an update or pick one of the five required scenarios; edit the verified records (add/remove/reset) to test other situations; open "How this was produced" for the audit trail. The evaluation panel shows 3 random cases from the latest run (expected vs actual, and what the model alone would have done); "Show 3 others" draws again; "Run this case live" re-runs it.
+- **UI:** paste an update or pick one of the five required scenarios; edit the verified records (add/remove/reset) to test other situations; open "How this was produced" for the audit trail. The evaluation panel shows 3 random cases from the latest run (expected vs actual, and what the model alone would have done); "Show 3 others" draws again; "Show all 100" lists every case with filters by family and outcome (pipeline failed, model alone failed, fixed by guardrails); "Run this case live" re-runs any case.
 - **API:**
 
 ```bash
@@ -83,12 +83,13 @@ curl -X POST http://127.0.0.1:8000/api/analyze -H "Content-Type: application/jso
 | `GET /api/reference` | default records |
 | `GET /api/samples` | the five required scenarios |
 | `GET /api/evals/sample?n=3` | random cases from the latest evaluation |
+| `GET /api/evals/all` | all cases from the latest evaluation |
 | `GET /health` | liveness |
 
 ## Test and evaluate
 
 ```bash
-python -m pytest                          # 25 deterministic tests, no network (~3 s)
+python -m pytest                          # 26 deterministic tests, no network (~3 s)
 python -m evals.run_eval --label myrun    # 100 live cases, ~45 s, writes evals/results/myrun.json
 ```
 

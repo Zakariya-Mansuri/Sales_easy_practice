@@ -37,6 +37,16 @@ def eval_sample(n: int = Query(3, ge=1, le=10)) -> dict:
             "cases": [present_case(c) for c in picked]}
 
 
+@app.get("/api/evals/all")
+def eval_all() -> dict:
+    """Every case from the latest evaluation run, in dataset order."""
+    data = load_latest()
+    if data is None:
+        raise HTTPException(404, "No evaluation results found. Run: python -m evals.run_eval --label v1")
+    return {"meta": data["meta"], "summary": {k: data["summary"][k] for k in ("n", "full_pass", "model_only_pass")},
+            "cases": [present_case(c) for c in data["cases"]]}
+
+
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 def analyze_update(req: AnalyzeRequest) -> AnalyzeResponse:
     return analyze(req.update, req.records)

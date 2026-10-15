@@ -202,7 +202,7 @@ The asymmetry is the design: **false negatives on harm or injection are unaccept
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest                          # 25 deterministic tests, no network
+python -m pytest                          # 26 deterministic tests, no network
 python -m evals.run_eval --label myrun    # 100 live cases, ~45 s with 8 workers
 python -m evals.run_eval --label quick --only injection A01 A04   # subset (does not overwrite latest.json)
 ```

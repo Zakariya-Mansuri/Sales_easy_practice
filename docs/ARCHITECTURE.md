@@ -98,7 +98,7 @@ flowchart LR
 | [`app/eval_view.py`](../app/eval_view.py) | Read-only view of the latest eval run for the UI panel |
 | [`static/`](../static) | UI (no framework, no build step) |
 | [`evals/`](../evals) | 100-case dataset, runner, committed results |
-| [`tests/`](../tests) | 25 deterministic unit tests (no network) |
+| [`tests/`](../tests) | 26 deterministic unit tests (no network) |
 
 ## 5. Detailed design
 
@@ -217,7 +217,7 @@ A single static page (no framework, no build) with a written constraint sheet at
 - **Accessibility, measured**: all 18 text/background token pairs ≥ 4.5:1 in light and dark (computed, not eyeballed); 2 px focus rings; ≥ 24 px targets; `prefers-reduced-motion` honoured; result region is `aria-live`.
 - **Mobile**: single column; result scrolls into view on submit (otherwise tapping "Analyze" appeared to do nothing); records table reflows to two lines per row below 480 px so names are not truncated.
 
-Panels: field update + required scenarios; editable records table (IDs match server numbering, "edited" tag, reset, client-side validation mirroring the server); assessment (verdict, category, urgency, action, evidence, missing info, collapsible trace and raw JSON); evaluation sample (3 random cases from the latest run with expected vs actual and model-only result, "show 3 others", and "run this case live").
+Panels: field update + required scenarios; editable records table (IDs match server numbering, "edited" tag, reset, client-side validation mirroring the server); assessment (verdict, category, urgency, action, evidence, missing info, collapsible trace and raw JSON); evaluation sample (3 random cases from the latest run with expected vs actual and model-only result, "show 3 others", and "run this case live"); "show all 100" opens the full list as expandable rows, filterable by family and by outcome (pipeline failed / model alone failed / fixed by guardrails).
 
 ### 5.8 API
 
@@ -227,6 +227,7 @@ Panels: field update + required scenarios; editable records table (IDs match ser
 | `GET /api/reference` | default records |
 | `GET /api/samples` | the five required scenarios |
 | `GET /api/evals/sample?n=3` | n random cases from `evals/results/latest.json` |
+| `GET /api/evals/all` | every case from `evals/results/latest.json`, in dataset order |
 | `GET /health` | liveness |
 | `GET /` | UI |
 

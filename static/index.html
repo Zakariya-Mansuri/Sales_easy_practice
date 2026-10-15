@@ -121,9 +121,30 @@
         <h2 id="evals-h" class="label">Evaluation · 3 random cases from the latest run</h2>
         <p id="evals-summary" class="evals__summary"></p>
       </div>
-      <button type="button" id="evals-refresh" class="btn-quiet">Show 3 others</button>
+      <div class="evals__btns">
+        <button type="button" id="evals-refresh" class="btn-quiet">Show 3 others</button>
+        <button type="button" id="evals-all" class="btn-quiet" aria-expanded="false" aria-controls="eall">Show all 100</button>
+      </div>
     </div>
     <div id="evals-cards" class="evals__cards" aria-live="polite"></div>
+
+    <div id="eall" class="eall" hidden>
+      <div class="eall__bar">
+        <label>Family
+          <select id="eall-family"><option value="all">All families</option></select>
+        </label>
+        <label>Outcome
+          <select id="eall-status">
+            <option value="all">All cases</option>
+            <option value="pipeline_fail">Pipeline failed</option>
+            <option value="model_fail">Model alone failed</option>
+            <option value="saved">Fixed by guardrails (model failed, pipeline passed)</option>
+          </select>
+        </label>
+        <span id="eall-count" class="hint" aria-live="polite"></span>
+      </div>
+      <div id="eall-list" class="eall__list"></div>
+    </div>
   </section>
 
   <script src="/static/app.js"></script>

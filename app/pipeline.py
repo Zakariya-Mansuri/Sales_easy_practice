@@ -76,8 +76,8 @@ def run(update: str, records: list[StockRecord] | None = None) -> tuple[AnalyzeR
             ]
             continue
 
-        analysis, checks, fired, notes = enforce(raw, update, rows)
-        trace.stock_checks, trace.guardrails = checks, fired
+        analysis, checks, fired, notes, reasons = enforce(raw, update, rows)
+        trace.stock_checks, trace.guardrails, trace.review_reasons = checks, fired, reasons
         trace.notes.extend(notes)
         return done(analysis)
 

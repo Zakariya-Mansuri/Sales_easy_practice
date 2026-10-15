@@ -2,7 +2,7 @@
 
 SalesEasy reads one free-text update from an FMCG field-sales rep and returns a validated JSON assessment: what the issue is, how urgent it is, which statements are **verified**, **contradicted** or **unverified** against system records, the next action, and whether a human must decide.
 
-> **Results (100-case evaluation, v3):** full pipeline **98/100**; the same model responses without the deterministic layer **40/100**. 0 fallbacks, p50 latency ≈ 3.2 s. Details: [docs/EVALUATION.md](docs/EVALUATION.md).
+> **Results (104-case evaluation, v4):** full pipeline **102/104**; the same model responses without the deterministic layer **36/104**. On the original 100 cases: 98/100. 0 fallbacks, p50 latency ≈ 2.5 s. Details: [docs/EVALUATION.md](docs/EVALUATION.md).
 
 - **Demo:** _deployment URL to be added_
 - **Design document:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -13,7 +13,7 @@ SalesEasy reads one free-text update from an FMCG field-sales rep and returns a 
 
 ## How it works (one paragraph)
 
-The LLM (`openai/gpt-4o-mini` via OpenRouter, Pydantic structured outputs) **extracts**: the claims in the update, which outlet/SKU record each refers to, and risk signals. **Code decides**: it validates every record link against the text, compares claims to system stock, writes all system facts itself, marks evidence verified/contradicted/unverified, applies escalation rules, and replaces the action when the update tries to instruct the system. Code can only *escalate*, never lower urgency or clear a review, so text that fools the model cannot get past the rules. Any failure returns a fail-closed answer (review = true).
+The LLM (`openai/gpt-4o-mini` via OpenRouter, Pydantic structured outputs) **extracts**: the claims in the update, which outlet/SKU record each refers to, and risk signals. **Code decides**: it states first any outlet the update names that is not in the records, validates every record link against the text, compares claims to system stock, writes all system facts itself, marks evidence verified/contradicted/unverified, applies escalation rules, and replaces the action when the update tries to instruct the system. Code can only *escalate*, never lower urgency or clear a review, so text that fools the model cannot get past the rules. Any failure returns a fail-closed answer (review = true).
 
 ```text
 update ─▶ boundary validation ─▶ LLM (structured) ─▶ figure check (retry once) ─▶ guardrails ─▶ {analysis, trace}
@@ -63,7 +63,7 @@ Without a key the service still runs and every request returns the fail-closed f
 
 ## Use
 
-- **UI:** paste an update or pick one of the five required scenarios; edit the verified records (add/remove/reset) to test other situations; open "How this was produced" for the audit trail. The evaluation panel shows 3 random cases from the latest run (expected vs actual, and what the model alone would have done); "Show 3 others" draws again; "Show all 100" lists every case with filters by family and outcome (pipeline failed, model alone failed, fixed by guardrails); "Run this case live" re-runs any case.
+- **UI:** paste an update or pick one of the five required scenarios; edit the verified records (add/remove/reset) to test other situations; open "How this was produced" for the audit trail. The evaluation panel shows 3 random cases from the latest run (expected vs actual, and what the model alone would have done); "Show 3 others" draws again; "Show all" lists every case with filters by family and outcome (pipeline failed, model alone failed, fixed by guardrails); "Run this case live" re-runs any case.
 - **API:**
 
 ```bash
@@ -89,20 +89,20 @@ curl -X POST http://127.0.0.1:8000/api/analyze -H "Content-Type: application/jso
 ## Test and evaluate
 
 ```bash
-python -m pytest                          # 26 deterministic tests, no network (~3 s)
-python -m evals.run_eval --label myrun    # 100 live cases, ~45 s, writes evals/results/myrun.json
+python -m pytest                          # 30 deterministic tests, no network (~3 s)
+python -m evals.run_eval --label myrun    # 104 live cases, ~45 s, writes evals/results/myrun.json
 ```
 
 ## Sample inputs
 
-The five required scenarios are in [`app/samples.py`](app/samples.py); all 100 evaluation inputs with their expectations are in [`evals/cases.py`](evals/cases.py), grouped into 17 families (stock conflicts, ambiguity, injections, health harm, false-positive traps, messy input, …).
+The five required scenarios are in [`app/samples.py`](app/samples.py); all 104 evaluation inputs with their expectations are in [`evals/cases.py`](evals/cases.py), grouped into 18 families (stock conflicts, ambiguity, injections, health harm, false-positive traps, outlets not in the records, messy input, …).
 
 ## Repository layout
 
 ```text
 app/            FastAPI service: schemas, llm, pipeline, guardrails, records, eval view
 static/         UI (HTML/CSS/JS, no build step)
-evals/          cases.py (100 cases), run_eval.py, results/ (v1, v2, v3, v3-repeat, latest)
+evals/          cases.py (104 cases), run_eval.py, results/ (v1, v2, v3, v3-repeat, v4, latest)
 tests/          deterministic unit tests
 docs/           ARCHITECTURE.md, DECISIONS.md, EVALUATION.md
 ```

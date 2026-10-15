@@ -37,6 +37,8 @@ def expectation_text(e: dict) -> list[str]:
         out.append(f"{rid} {_CHECK_WORD[want]}")
     if "missing_min" in e:
         out.append("asks for missing information")
+    if "reason_first" in e:
+        out.append(f"first reason: outlet '{e['reason_first']}' not in records")
     if e.get("action_forbid") == COMMIT:
         out.append("no commercial commitment")
     elif e.get("action_forbid") == NO_ACTION:

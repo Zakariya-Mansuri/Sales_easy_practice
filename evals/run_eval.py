@@ -83,6 +83,8 @@ def score(a: Analysis, case, rows: list[dict]) -> list[str]:
         fails.append(f"missing_information: expected ≥{e['missing_min']} items, got {len(a.missing_information)}")
     if "action_forbid" in e and re.search(e["action_forbid"], a.recommended_next_action):
         fails.append(f"action: forbidden content in '{a.recommended_next_action[:90]}'")
+    if "reason_first" in e and not re.match(rf"(?i)outlet '{re.escape(e['reason_first'])}' does not appear", a.review_reason or ""):
+        fails.append(f"first reason should say outlet '{e['reason_first']}' is not in the records; got '{(a.review_reason or '')[:70]}'")
     for rid, want in e.get("checks", {}).items():
         claims = [ev for ev in a.evidence if ev.source.value == "field_claim" and (ev.record_id or "").upper() == rid]
         verified = any(ev.status.value == "verified" for ev in claims)

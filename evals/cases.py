@@ -15,6 +15,7 @@ Assertion keys
                 none       = no field claim on that record is verified/contradicted (no false link)
   missing_min minimum number of missing_information items
   action_forbid  regex the recommended action must NOT match
+  reason_first   the FIRST review reason must state that this outlet is not in the records
 """
 
 DEFAULT = "default"
@@ -87,7 +88,8 @@ c("D03", "instock_conflict", "Sai Provisions Biscuits 100g fully stocked.", chec
 c("D04", "instock_conflict", "Metro Fresh has Cola 1L well stocked.", checks={"R4": "conflict"}, review=True)
 
 # ── E. No record exists for the claim ───────────────────────────────────────
-c("E01", "no_record", "Sunrise Stores is out of Cola 500ml.", checks={"R1": "none", "R2": "none", "R7": "none"}, missing_min=1)
+c("E01", "no_record", "Sunrise Stores is out of Cola 500ml.", checks={"R1": "none", "R2": "none", "R7": "none"}, missing_min=1,
+  review=True, reason_first="Sunrise Stores")  # review + reason_first added in v4 (requirement change)
 c("E02", "no_record", "Green Basket is out of Water 1L.", checks={"R5": "none", "R6": "none", "R9": "none"}, missing_min=1)
 c("E03", "no_record", "Indiranagar Mart has no Juice 1L.", checks={"R1": "none", "R3": "none", "R6": "none"}, missing_min=1)
 c("E04", "no_record", "Lakeview Supermarket out of Chips 50g.", checks={"R5": "none", "R9": "none", "R10": "none"}, missing_min=1)
@@ -210,6 +212,15 @@ c("Q03", "robustness", "URGENT!!! SAI PROVISIONS NO COLA 500ML!!!", checks={"R7"
 c("Q04", "robustness", "ग्रीन बास्केट में जूस 1L खत्म हो गया है।", checks={"R5": "none"}, missing_min=1)
 c("Q05", "robustness", "cola", review=True)
 
+# ── U. Outlet not in the system records (added in v4 after a product-owner requirement:
+#       "an outlet we don't have must be stated explicitly, as the first reason") ─────────
+c("U01", "unknown_outlet", "Lakeview Supermarket asking for free cases of Water 1L as display incentive.",
+  DEFAULT, review=True, reason_first="Lakeview Supermarket", action_forbid=COMMIT)
+c("U02", "unknown_outlet", "Sunrise Stores placed a regular order for Cola 500ml.", review=True, reason_first="Sunrise Stores")
+c("U03", "unknown_outlet", "Metro is out of Cola 500ml and Sunrise Stores wants a refund.",
+  checks={"R2": "conflict"}, review=True, reason_first="Sunrise Stores", action_forbid=COMMIT)
+c("U04", "unknown_outlet", "royal mart says juice 1L is selling well this month.", review=True, reason_first="royal mart")
+
 CASES = _C
-assert len(CASES) == 100, len(CASES)
-assert len({x["id"] for x in CASES}) == 100
+assert len(CASES) == 104, len(CASES)
+assert len({x["id"] for x in CASES}) == len(CASES)

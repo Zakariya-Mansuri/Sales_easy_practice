@@ -189,6 +189,32 @@ def _resolve(claim, update: str, records: list[dict]) -> str | None:
     return cands[0]["record_id"] if len(cands) == 1 else None
 
 
+def _outlet_in_records(mention: str, records: list[dict]) -> bool:
+    """Known if it names a record outlet in full, or by a first word that only one
+    distinct outlet starts with ('Metro' → Metro Fresh, also 'metro frsh')."""
+    m = _norm(mention).strip()
+    outlets = {r["outlet"].casefold() for r in records}
+    if any(o == m or o in m for o in outlets):
+        return True
+    first = m.split()[0] if m.split() else ""
+    return sum(o.split()[0] == first for o in outlets) == 1
+
+
+def unknown_outlets(a: LLMAssessment, update: str, records: list[dict]) -> list[str]:
+    """Outlets the update names that do not appear in the records. A name the model
+    reports but that is not in the update text is ignored (it may be invented)."""
+    text = _norm(update)
+    seen, out = set(), []
+    for name in a.outlets_mentioned + [c.outlet_mentioned for c in a.stock_claims]:
+        key = _norm(name).strip()
+        if not key or key in seen or key not in text or key in ("unspecified outlet",):
+            continue
+        seen.add(key)
+        if not _outlet_in_records(name, records):
+            out.append(name.strip())
+    return out
+
+
 STATUS_FOR = {"consistent": EvidenceStatus.VERIFIED, "conflict": EvidenceStatus.CONTRADICTED,
               "not_comparable": EvidenceStatus.UNVERIFIED}
 
@@ -205,8 +231,8 @@ def _raise(current: Urgency, floor: Urgency) -> Urgency:
     return floor if URGENCY_RANK[floor] > URGENCY_RANK[current] else current
 
 
-def enforce(a: LLMAssessment, update: str, records: list[dict]) -> tuple[Analysis, list[StockCheck], list[str], list[str]]:
-    """Returns (final analysis, stock checks, guardrails fired, notes)."""
+def enforce(a: LLMAssessment, update: str, records: list[dict]) -> tuple[Analysis, list[StockCheck], list[str], list[str], list[str]]:
+    """Returns (final analysis, stock checks, guardrails fired, notes, review reasons in priority order)."""
     by_id = {r["record_id"]: r for r in records}
     fired: list[str] = []
     notes: list[str] = []
@@ -230,6 +256,22 @@ def enforce(a: LLMAssessment, update: str, records: list[dict]) -> tuple[Analysi
             notes.append(f"recovered stock claim filed under evidence: '{e.statement[:50]}'")
         else:
             kept_evidence.append(e)
+
+    # 0b. An outlet the update names but the records do not contain: nothing about it can be
+    #     verified, so it frames every other reason and is stated FIRST. Worded as "not in the
+    #     records" (the records are a stock table, not an outlet master — absence ≠ nonexistence).
+    unknown = unknown_outlets(a, update, records)
+    unknown_keys = {_norm(n).strip() for n in unknown}
+    for name in unknown:
+        fired.append(f"outlet not in records ({name})")
+        reasons.append(f"Outlet '{name}' does not appear in the system records, so nothing reported about it can be verified.")
+    missing[:0] = [f"Confirm outlet '{n}': the correct registered name, or whether it should be added to the system records."
+                   for n in unknown]
+    outlet_ev = [
+        Evidence(statement=f"No system record exists for outlet '{n}'.", source=EvidenceSource.SYSTEM_RECORD,
+                 status=EvidenceStatus.VERIFIED, record_id=None)
+        for n in unknown
+    ]
 
     # 1. Stock claims: code, not the model, compares claim vs record and writes the evidence line.
     checks: dict[str, StockCheck] = {}
@@ -258,7 +300,8 @@ def enforce(a: LLMAssessment, update: str, records: list[dict]) -> tuple[Analysi
         if rec is None:
             stock_ev.append(Evidence(statement=statement, source=EvidenceSource.FIELD_CLAIM,
                                      status=EvidenceStatus.UNVERIFIED, record_id=None))
-            if c.claimed_state in ("out_of_stock", "in_stock", "low_stock"):
+            # An unknown outlet is already reported above; don't repeat it per claim.
+            if c.claimed_state in ("out_of_stock", "in_stock", "low_stock") and _norm(c.outlet_mentioned).strip() not in unknown_keys:
                 label = f"{c.outlet_mentioned} / {c.sku_mentioned or 'unspecified product'}"
                 missing.append(f"No unique system record for '{label}' — confirm exact outlet and SKU.")
             continue
@@ -371,10 +414,10 @@ def enforce(a: LLMAssessment, update: str, records: list[dict]) -> tuple[Analysi
     final = Analysis(
         issue_category=category,
         urgency=urgency,
-        evidence=system_ev + field_ev,
+        evidence=outlet_ev + system_ev + field_ev,
         recommended_next_action=action,
         missing_information=list(dict.fromkeys(missing)),
         needs_human_review=needs_review,
         review_reason=" ".join(reasons) if needs_review else None,
     )
-    return final, list(checks.values()), fired, notes
+    return final, list(checks.values()), fired, notes, (reasons if needs_review else [])

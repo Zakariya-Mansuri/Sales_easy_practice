@@ -30,7 +30,7 @@ Format: Context → Decision → Consequences (Nygard). Status of all records: *
 
 **Decision.** The model returns extractions (`stock_claims`, `signals`) alongside its draft assessment. Code computes: stock comparisons, evidence statuses, review, urgency floors, and whether the action is trustworthy.
 
-**Consequences.** Decisions are auditable, testable without the network (26 unit tests) and explainable in the trace. The model's role is narrower and easier to evaluate. Measured effect on the same responses: 40 → 98 / 100.
+**Consequences.** Decisions are auditable, testable without the network (30 unit tests) and explainable in the trace. The model's role is narrower and easier to evaluate. Measured effect on the same responses: 40 → 98 / 100.
 
 ---
 
@@ -131,3 +131,13 @@ Format: Context → Decision → Consequences (Nygard). Status of all records: *
 **Decision.** One static HTML page, vanilla JS, no build step; a design constraint sheet (one accent, one signal colour, no shadows, two radii, 4 px scale, measured contrast) at the top of the stylesheet. Model output is always rendered with `textContent`.
 
 **Consequences.** Nothing to build or bundle for deployment; the red review banner is the only loud element; XSS via echoed text is prevented by construction.
+
+---
+
+## ADR-014 — An outlet not in the records is the first reason for review
+
+**Context.** The product owner tested "Lakeview Supermarket asking for free cases of Water 1L…" against the default records. The answer escalated the commercial request but never said the outlet is not in the system. Unknown outlets were detected only inside stock claims, so for non-stock requests about an unrecorded outlet that fact was never reported; the model alone returned review = false on 3 of 4 such cases.
+
+**Decision.** The model extracts every outlet named (`outlets_mentioned`, copied as written). Code checks each against the records with the same full-name / unique-first-word rule used for linking, ignoring names that are not in the update text. An unknown outlet forces review and is stated **first** — in `review_reason`, as the first evidence line (a system-side fact) and as the first missing-information item. Wording is "does not appear in the system records", not "does not exist", because the records are a stock table, not an outlet master. Reasons are also returned as an ordered list in `trace.review_reasons`.
+
+**Consequences.** The most fundamental doubt (who is this?) frames every other reason. Updates about outlets genuinely missing from the records always reach a human. Names written in another script are reported as not in the records (safe; documented limitation until an alias table exists).

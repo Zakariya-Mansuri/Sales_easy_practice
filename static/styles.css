@@ -234,6 +234,8 @@ textarea:focus-visible { outline-offset: 0; }
 .verdict { border-radius: var(--r-ctl); padding: var(--s4); border: 1px solid var(--hair); }
 .verdict__title { margin: 0; font-weight: 600; font-size: 17px; }
 .verdict__reason { margin: var(--s1) 0 0; }
+.verdict__reason ol { margin: 0; padding-left: 1.4em; }
+.verdict__reason li + li { margin-top: var(--s1); }
 .verdict--review { background: var(--signal-fill); border-color: var(--signal-fill); color: var(--signal-ink); }
 .verdict--clear .verdict__title { color: var(--accent); }
 .verdict--clear .verdict__reason { color: var(--muted); }

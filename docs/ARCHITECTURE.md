@@ -59,7 +59,8 @@ The five required scenarios are instances of six general principles. The design 
 | S3 avoid unsupported action | commercial rule + action assertion | A03, family `commercial` |
 | S4 resist prompt injection | delimiting, boundary validation, escalate-only rules, action replacement | A04, family `injection` (12 variants) |
 | S5 escalate appropriately | harm → `critical`/`health_safety`, hazard → `high` | A05, families `health_harm`, `product_hazard` |
-| 5 cases + 3 of your own | 5 required + 95 own cases (100) | [EVALUATION.md](EVALUATION.md) |
+| 5 cases + 3 of your own | 5 required + 99 own cases (104) | [EVALUATION.md](EVALUATION.md) |
+| Product-owner addition: an outlet not in the records is stated explicitly, as the first reason | `guardrails.unknown_outlets` + rule table §5.4 | family `unknown_outlet` (4 cases), E01; unit tests `test_unknown_outlet_*` |
 | Expected vs actual, ≥1 failure, show improvement | `evals/results/v1…v3.json`, iteration log | [EVALUATION.md §5](EVALUATION.md#5-iteration-log-failures-root-causes-fixes) |
 | Minimal web app/API, deployed, no keys exposed | FastAPI + static page; key only in server env | — |
 
@@ -98,7 +99,7 @@ flowchart LR
 | [`app/eval_view.py`](../app/eval_view.py) | Read-only view of the latest eval run for the UI panel |
 | [`static/`](../static) | UI (no framework, no build step) |
 | [`evals/`](../evals) | 100-case dataset, runner, committed results |
-| [`tests/`](../tests) | 26 deterministic unit tests (no network) |
+| [`tests/`](../tests) | 30 deterministic unit tests (no network) |
 
 ## 5. Detailed design
 
@@ -118,9 +119,10 @@ flowchart LR
 
 `evidence` is structured rather than prose because "verified vs unverified" must be machine-checkable: a reviewer, a test, or a downstream system can filter on `status` without parsing English.
 
-**Model-facing output — `LLMAssessment`** = `Analysis` + two extraction blocks the code consumes:
+**Model-facing output — `LLMAssessment`** = `Analysis` + three extraction blocks the code consumes:
 
 ```text
+outlets_mentioned[]: every outlet the update names, copied as written
 stock_claims[]: { statement, record_id|null, outlet_mentioned, sku_mentioned,
                   claimed_state: out_of_stock|low_stock|in_stock|damaged_or_defective|other }
 signals:        { health_or_safety_risk, embedded_instructions, commercial_action_requested }
@@ -169,6 +171,7 @@ A rule either uses the model's extracted signal, a keyword backstop, or both; th
 
 | Trigger | Effect | Rationale |
 |---|---|---|
+| Update names an outlet that is not in the records (full name, or a first word unique among outlets, not found; names absent from the update text are ignored) | review; **stated as the first reason**; first evidence line "No system record exists for outlet 'X'"; first missing item "confirm outlet" | nothing reported about an unrecorded outlet can be verified, so it frames every other reason. Worded "does not appear in the system records" — the records are a stock table, not an outlet master |
 | Stock claim contradicts a record | review; urgency ≥ medium | brief S2: conflicting evidence needs a person |
 | Model links to a record the text does not support / an unknown record | review | an unverifiable link is uncertainty |
 | Model signal: person harmed by product | review; category `health_safety`; urgency **critical** | potential product-safety incident (S5) |
@@ -180,7 +183,7 @@ A rule either uses the model's extracted signal, a keyword backstop, or both; th
 | Model's own review flag | kept (code never clears it) | |
 | Impact claimed with no figure in the update | adds "size of the claimed sales impact (amount and period)" to missing info | the other half of "do not invent an impact figure" |
 
-`review_reason` concatenates the code reasons (deterministic, specific) and the model's reason when the model asked for review.
+`review_reason` concatenates the code reasons (deterministic, specific, most fundamental first) and the model's reason when the model asked for review. The brief fixes it as one string, so the same reasons are also returned separately in `trace.review_reasons`, and the UI shows them as a numbered list when there is more than one.
 
 ### 5.5 Prompt-injection defence in depth
 
@@ -256,7 +259,7 @@ Panels: field update + required scenarios; editable records table (IDs match ser
 ## 8. Known limitations
 
 - Records hold only stock levels, so only stock claims can be verified. Damage, health and competitor claims are always unverified.
-- Linking is lexical. Records written in another script (e.g. a Devanagari update against Latin-script records) are not linked; the system asks to confirm instead of guessing.
+- Linking is lexical. Records written in another script (e.g. a Devanagari update against Latin-script records) are not linked; the system asks to confirm instead of guessing. The same applies to the outlet check: "ग्रीन बास्केट" (Green Basket in Devanagari) is reported as an outlet not in the records — literally true, safe, but less helpful than recognising it.
 - Keyword backstops are English-centric with some Hinglish; an injection phrased in an unseen way relies on the model signal plus the escalate-only invariant.
 - Two accepted false positives remain by design (EVALUATION §7): a joke containing "ignore the instructions", and a rep's own sickness.
 - `temperature=0` output varies between runs (EVALUATION §6).

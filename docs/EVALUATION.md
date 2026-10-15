@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Suite** | 100 cases: 5 required by the brief + 95 written for this system |
+| **Suite** | 104 cases: 5 required by the brief + 99 written for this system (100 until v3; 4 added in v4 for a new requirement) |
 | **System under test** | `openai/gpt-4o-mini` (OpenRouter), `temperature=0`, structured outputs + deterministic guardrails |
-| **Headline (v3)** | Full pipeline **98/100** · same model responses without guardrails **40/100** · 0 fallbacks · 0 retries |
+| **Headline (v4)** | Full pipeline **102/104** (original 100: 98/100) · same model responses without guardrails **36/104** · 0 fallbacks · 0 retries |
 | **Raw results** | [`evals/results/`](../evals/results) — every case, expected, actual, trace, failures |
 | **Reproduce** | `python -m evals.run_eval --label <name>` |
 
@@ -72,6 +72,7 @@ The 5 required cases use the brief's three records. The other 95 use a 10-row se
 | false_positive_trap | 6 | Alarming words, harmless meaning: "nobody felt unwell", "expired-stock audit came back clean", a joke about ignoring display-kit instructions, "bill", "ill-timed", the rep's own sickness |
 | multi_issue | 4 | Conflict + harm; stockout + discount; injection + harm; conflict + competitor offer |
 | robustness | 5 | Hinglish, typos ("metro frsh", "500 ml"), all caps, Devanagari, a single word |
+| unknown_outlet | 4 | *(added in v4)* An outlet not in the records must be stated as the **first** reason: the product owner's own example on the default records, a routine order, a mixed known/unknown update, a lowercase name |
 
 ## 3. Results
 
@@ -81,6 +82,7 @@ The 5 required cases use the brief's three records. The other 95 use a 10-row se
 | **v2** | fixes E1–E7 (§5.2) | **96** | 37 | 0 | 0 | 3.2 s / 5.6 s |
 | **v3** | fixes E8–E9 | **98** | 40 | 0 | 0 | 3.2 s / 4.6 s |
 | v3-repeat | none (stability check) | **98** | 41 | 0 | 0 | 3.3 s / 4.7 s |
+| **v4** | requirement R1 (§5.4); suite 100 → 104 | **102 / 104** (original 100: **98**) | 36 / 104 | 0 | 0 | 2.5 s / 6.5 s |
 
 Latency measured with 8 concurrent requests.
 
@@ -171,6 +173,16 @@ Changing an evaluator after seeing results can inflate scores, so every change i
 
 No expectation was relaxed to make a failing system output pass.
 
+### 5.4 Requirement change (v4)
+
+| # | Source | Requirement | Change | Result |
+|---|---|---|---|---|
+| R1 | Product owner, testing the UI with the default records: *"Lakeview Supermarket asking for free cases of Water 1L…"* returned review = true for the commercial request but never said that **Lakeview Supermarket is not in the system records** | An outlet not in the records must be stated explicitly, **as the first reason** | Model also extracts `outlets_mentioned`; code checks each against the records (full name, or a first word unique among outlets; names not present in the update text are ignored). Unknown → review, first reason, first evidence line (system-side fact), first missing item. Reasons are also returned as a list (`trace.review_reasons`) and shown numbered in the UI. Previously an unknown outlet was noticed only inside a stock claim, so a non-stock request (commercial, routine order) about an unrecorded outlet passed silently. | New family `unknown_outlet` 4/4 (model alone 0/4). E01 gained `review = true` and the first-reason assertion. Original 100 unchanged at 98/100. |
+
+Coverage check: the rule fired on exactly 6 cases in v4 — the 5 that name an outlet not in the records, and Q04, where "ग्रीन बास्केट" is Green Basket written in Devanagari. That flag is literally true (the records spell it in Latin script) and safe (review + confirm outlet), and is listed under limitations. It did not fire on "the supermarket", "my beat" or competitor mentions.
+
+The model alone mentioned the missing outlet in 1 of these 6 cases (E01, where the issue is itself a stock claim: "an outlet not listed in the system records") and in 0 of the 4 `unknown_outlet` cases, where it returned **review = false on 3 of 4** — including U01, a request for free goods from an unrecorded outlet. Code caught all of them.
+
 ## 6. Stability (same code, two runs)
 
 | | Review flag changed | Review + urgency + category changed | Pass/fail flipped |
@@ -202,8 +214,8 @@ The asymmetry is the design: **false negatives on harm or injection are unaccept
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest                          # 26 deterministic tests, no network
-python -m evals.run_eval --label myrun    # 100 live cases, ~45 s with 8 workers
+python -m pytest                          # 30 deterministic tests, no network
+python -m evals.run_eval --label myrun    # 104 live cases, ~45 s with 8 workers
 python -m evals.run_eval --label quick --only injection A01 A04   # subset (does not overwrite latest.json)
 ```
 

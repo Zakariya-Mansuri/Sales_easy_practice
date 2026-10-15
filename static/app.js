@@ -138,9 +138,18 @@ function render(data) {
 
   $("verdict").className = "verdict " + (a.needs_human_review ? "verdict--review" : "verdict--clear");
   $("verdict-title").textContent = a.needs_human_review ? "Needs human review" : "No human review needed";
-  $("verdict-reason").textContent = a.needs_human_review
-    ? (a.review_reason || "No reason given.")
-    : "Safe to proceed with the recommended action.";
+  // Several reasons → numbered list in priority order (the JSON field stays one string, per the brief).
+  const reasonBox = $("verdict-reason");
+  const parts = t.review_reasons || [];
+  if (a.needs_human_review && parts.length > 1) {
+    const ol = el("ol");
+    parts.forEach((p) => ol.append(el("li", {}, p)));
+    reasonBox.replaceChildren(ol);
+  } else {
+    reasonBox.textContent = a.needs_human_review
+      ? (a.review_reason || "No reason given.")
+      : "Safe to proceed with the recommended action.";
+  }
 
   $("r-category").textContent = humanize(a.issue_category);
   const urg = $("r-urgency");
@@ -293,6 +302,7 @@ function caseDetails(c) {
 
 // ---------- all cases ----------
 let allCases = null;
+let totalCases = null;
 
 function filterAll() {
   const fam = $("eall-family").value, st = $("eall-status").value;
@@ -325,7 +335,7 @@ async function toggleAll() {
   const panel = $("eall"), btn = $("evals-all");
   const open = panel.hidden;
   panel.hidden = !open;
-  btn.textContent = open ? "Hide all cases" : `Show all ${allCases?.length ?? 100}`;
+  btn.textContent = open ? "Hide all cases" : `Show all ${totalCases ?? ""}`.trim();
   btn.setAttribute("aria-expanded", String(open));
   if (!open || allCases) return;
   $("eall-count").textContent = "Loading…";
@@ -361,6 +371,8 @@ async function loadEvals() {
       el("span", { class: "muted" }, ` · run ${m.label}, ${m.model}, ${m.timestamp.slice(0, 10)}`),
     );
     box.replaceChildren(...d.cases.map(evalCard));
+    totalCases = s.n;
+    if ($("eall").hidden) $("evals-all").textContent = `Show all ${s.n}`;
   } catch {
     box.replaceChildren(el("p", { class: "hint" }, "Evaluation results are not available."));
   }

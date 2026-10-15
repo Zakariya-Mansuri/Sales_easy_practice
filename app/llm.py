@@ -40,6 +40,10 @@ MISSING INFORMATION
   (e.g. size of the claimed loss, batch number, photo, when it happened, who is affected).
   Leave it empty only when nothing needed is missing.
 
+OUTLETS
+- List every outlet/store the update names in outlets_mentioned, copied exactly as written, including
+  outlets that are not in the system records. The application checks them against the records.
+
 STOCK CLAIMS
 - For every outlet/product whose stock level the rep describes, add a stock_claims entry.
   Damage or quality problems use claimed_state "damaged_or_defective".

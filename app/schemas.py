@@ -99,6 +99,10 @@ class Signals(BaseModel):
 
 
 class LLMAssessment(Analysis):
+    outlets_mentioned: list[str] = Field(
+        description="Every outlet/store the update refers to, copied exactly as the rep wrote it "
+        "(whether or not it is in the system records). Empty if none is named."
+    )
     stock_claims: list[StockClaim]
     signals: Signals
 
@@ -169,6 +173,7 @@ class Trace(BaseModel):
     records_source: str = "default"  # "default" | "request"
     stock_checks: list[StockCheck] = []
     guardrails: list[str] = []       # deterministic escalations that fired
+    review_reasons: list[str] = []   # the parts of review_reason, most fundamental first
     notes: list[str] = []
 
 

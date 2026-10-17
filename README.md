@@ -8,6 +8,8 @@ SalesEasy reads one free-text update from an FMCG field-sales rep and returns a 
 - **Design document:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Decision records:** [docs/DECISIONS.md](docs/DECISIONS.md)
 - **Evaluation report:** [docs/EVALUATION.md](docs/EVALUATION.md)
+- **Function reference (with diagrams):** [docs/FUNCTION_REFERENCE.md](docs/FUNCTION_REFERENCE.md)
+- **Data flow by function and file:** [docs/DATA_FLOW.md](docs/DATA_FLOW.md)
 
 ---
 

@@ -4,8 +4,5 @@
       "maxDuration": 60,
       "includeFiles": "{app,static,evals}/**"
     }
-  },
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
-  ]
+  }
 }

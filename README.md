@@ -4,7 +4,7 @@ SalesEasy reads one free-text update from an FMCG field-sales rep and returns a 
 
 > **Results (104-case evaluation, v4):** full pipeline **102/104**; the same model responses without the deterministic layer **36/104**. On the original 100 cases: 98/100. 0 fallbacks, p50 latency ≈ 2.5 s. Details: [docs/EVALUATION.md](docs/EVALUATION.md).
 
-- **Demo:** _deployment URL to be added_
+- **Live demo:** https://saleseasyfuturelab.vercel.app (no login). Pick a scenario chip and press *Analyze*; open *How this was produced* for the trace. The evaluation panel at the bottom shows 3 random cases, or *Show all*. The first request after a quiet period can take a few extra seconds while the serverless function starts.
 - **Design document:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Decision records:** [docs/DECISIONS.md](docs/DECISIONS.md)
 - **Evaluation report:** [docs/EVALUATION.md](docs/EVALUATION.md)
